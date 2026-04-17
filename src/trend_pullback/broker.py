@@ -87,7 +87,11 @@ class BybitBroker:
                 "apiKey": api_key,
                 "secret": api_secret,
                 "options": {
-                    "defaultType": "linear",  # USDT-margined perpetuals
+                    # USDT-margined perpetual futures (Bybit linear category)
+                    # This affects ALL requests: OHLCV, orders, positions.
+                    # Change to "spot" for spot trading.
+                    "defaultType": "linear",
+                    "defaultSubType": "linear",
                 },
             }
         )
@@ -117,7 +121,10 @@ class BybitBroker:
             The last bar (current open bar) is excluded — only closed bars.
         """
         raw = self._retry(
-            lambda: self._exchange.fetch_ohlcv(self.symbol, timeframe, limit=limit + 1)
+            lambda: self._exchange.fetch_ohlcv(
+                self.symbol, timeframe, limit=limit + 1,
+                params={"category": "linear"},
+            )
         )
         # Drop the last bar — it's still open
         return raw[:-1]
@@ -177,6 +184,7 @@ class BybitBroker:
                 type="market",
                 side=side,
                 amount=size,
+                params={"category": "linear"},
             )
         )
         return self._to_order_result(order)
@@ -203,7 +211,7 @@ class BybitBroker:
                 side=side,
                 amount=size,
                 price=price,
-                params={"reduceOnly": True},
+                params={"category": "linear", "reduceOnly": True},
             )
         )
         return self._to_order_result(order)
@@ -230,6 +238,7 @@ class BybitBroker:
                 side=side,
                 amount=size,
                 params={
+                    "category": "linear",
                     "stopPrice": stop_price,
                     "reduceOnly": True,
                 },
