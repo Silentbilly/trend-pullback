@@ -1,0 +1,32 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "trend-pullback"
+version = "0.1.0"
+description = "Backtest engine for the Trend Pullback Pro strategy (Pine Script → Python)"
+requires-python = ">=3.11"
+dependencies = [
+    "backtrader>=1.9.78.123",
+    "pandas>=2.1.0",
+    "numpy>=1.26.0",
+    "pyyaml>=6.0.1",
+    "pydantic>=2.5.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-cov>=5.0.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/trend_pullback"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v"
+
+[tool.hatch.envs.default]
+features = ["dev"]

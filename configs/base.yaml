@@ -1,0 +1,41 @@
+# ============================================================
+# Trend Pullback Pro — Base Configuration
+# All parameters mirror the Pine Script inputs exactly.
+# Override any value in a derived config (e.g. sample_backtest.yaml).
+# ============================================================
+
+strategy:
+  # --- Trend EMAs ---
+  fast_len: 50          # Fast EMA period
+  slow_len: 200         # Slow EMA period
+  pull_len: 21          # Pullback EMA period
+
+  # --- Slope filter ---
+  use_slope: true       # Require both EMAs to slope in trend direction
+  slope_lb: 5           # Bars lookback for slope check
+
+  # --- Pullback window ---
+  min_pb: 1             # Minimum consecutive pullback bars required
+  max_pb: 8             # Maximum consecutive pullback bars allowed
+
+  # --- RSI filter ---
+  use_rsi: true         # Enable RSI filter
+  rsi_len: 14           # RSI period
+  rsi_long_min: 45      # RSI must be >= this for long signal
+  rsi_short_max: 55     # RSI must be <= this for short signal
+
+  # --- Anti-duplicate ---
+  block_repeats: true   # Allow only one signal per pullback cycle
+
+  # --- Risk ---
+  atr_len: 14           # ATR period
+  atr_mul: 1.5          # Stop distance = ATR * atr_mul
+  rr: 2.0               # Risk-reward ratio for take-profit
+
+backtest:
+  symbol: "BTCUSDT"
+  timeframe: "1h"
+  data_path: "data/raw/BTCUSDT_1h.csv"
+  initial_capital: 10000.0
+  commission_pct: 0.06       # Percent per trade (matches Pine default)
+  stake: 1                   # Fixed position size (contracts/units)
