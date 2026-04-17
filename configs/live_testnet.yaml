@@ -1,0 +1,35 @@
+# ============================================================
+# Trend Pullback Pro — Live Testnet Config (Bybit)
+#
+# Usage:
+#   export BYBIT_API_KEY=...
+#   export BYBIT_API_SECRET=...
+#   export TELEGRAM_BOT_TOKEN=...   # optional
+#   export TELEGRAM_CHAT_ID=...     # optional
+#   python scripts/run_live.py --config configs/live_testnet.yaml
+# ============================================================
+
+strategy:
+  fast_len: 50
+  slow_len: 200
+  pull_len: 21
+  use_slope: true
+  slope_lb: 5
+  min_pb: 1
+  max_pb: 8
+  use_rsi: false
+  rsi_len: 14
+  rsi_long_min: 45
+  rsi_short_max: 55
+  block_repeats: true
+  atr_len: 14
+  atr_mul: 1.5
+  rr: 2.0
+
+backtest:
+  symbol: "ETHUSDT"
+  timeframe: "15m"
+  data_path: "data/raw/ETHUSDT_15m.csv"   # not used in live mode
+  initial_capital: 10000.0
+  commission_pct: 0.06
+  stake: 0.01                              # 0.01 ETH per trade

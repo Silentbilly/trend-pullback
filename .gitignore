@@ -45,3 +45,6 @@ output/
 # Secrets / env
 .env
 *.env
+
+# Live state files (contain open position data — do not commit)
+state/
