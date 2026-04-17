@@ -63,9 +63,12 @@ class TrendPullbackStrategy(bt.Strategy):
         self._sp: StrategyParams = sp
         self._signals: pd.DataFrame = self.p.signals_df
 
-        # Pending exit order reference — tracked to cancel on new signals
-        self._exit_order: bt.Order | None = None
+        # Entry order reference
         self._entry_order: bt.Order | None = None
+
+        # Exit bracket: take-profit and stop-loss orders
+        self._tp_order: bt.Order | None = None
+        self._sl_order: bt.Order | None = None
 
         # Pending levels stored until entry fills
         self._pending_levels = None
@@ -152,7 +155,6 @@ class TrendPullbackStrategy(bt.Strategy):
         # See README: "Execution model divergence".
         self._entry_order = self.buy(size=self.p.stake)
         self._entry_refs.add(self._entry_order.ref)
-        # Exit order is placed in notify_order() after entry confirms
         self._pending_levels = levels
 
     def _open_short(self, row: pd.Series, bar_dt: object) -> None:
@@ -184,6 +186,7 @@ class TrendPullbackStrategy(bt.Strategy):
         self._entry_refs.add(self._entry_order.ref)
         self._pending_levels = levels
 
+
     # ------------------------------------------------------------------
     # Order / trade callbacks
     # ------------------------------------------------------------------
@@ -200,60 +203,67 @@ class TrendPullbackStrategy(bt.Strategy):
                 self._entry_refs.discard(order.ref)
                 direction = "Long" if order.isbuy() else "Short"
                 fill_price = order.executed.price
+                filled_size = abs(order.executed.size) or self.p.stake
                 logger.info(
-                    "ENTRY filled %-6s @ %.5f  size=%d  cost=%.2f  comm=%.4f",
-                    direction, fill_price, order.executed.size,
+                    "ENTRY filled %-6s @ %.5f  size=%.6f  cost=%.2f  comm=%.4f",
+                    direction, fill_price, filled_size,
                     order.executed.value, order.executed.comm,
                 )
-                levels = getattr(self, "_pending_levels", None)
+                levels = self._pending_levels
                 if levels is not None:
-                    # Place fixed stop + limit exit
+                    # Place OCO-style bracket: TP limit + SL stop
+                    # Backtrader has no native OCO — we cancel the sibling
+                    # manually in notify_order when either leg fills.
                     if order.isbuy():
-                        self._exit_order = self.sell(
-                            size=order.executed.size,
-                            exectype=bt.Order.StopLimit,
+                        self._tp_order = self.sell(
+                            size=filled_size,
+                            exectype=bt.Order.Limit,
                             price=levels.take,
-                            plimit=levels.take,
-                            valid=None,
                         )
-                        # Stop-loss as a separate order
-                        self.sell(
-                            size=order.executed.size,
+                        self._sl_order = self.sell(
+                            size=filled_size,
                             exectype=bt.Order.Stop,
                             price=levels.stop,
-                            valid=None,
                         )
                     else:
-                        self._exit_order = self.buy(
-                            size=order.executed.size,
-                            exectype=bt.Order.StopLimit,
+                        self._tp_order = self.buy(
+                            size=filled_size,
+                            exectype=bt.Order.Limit,
                             price=levels.take,
-                            plimit=levels.take,
-                            valid=None,
                         )
-                        self.buy(
-                            size=order.executed.size,
+                        self._sl_order = self.buy(
+                            size=filled_size,
                             exectype=bt.Order.Stop,
                             price=levels.stop,
-                            valid=None,
                         )
                 self._entry_order = None
                 self._pending_levels = None
 
             else:
-                # Exit order completed — cancel the sibling order if still open
+                # One of TP or SL filled — cancel the other immediately
                 fill_price = order.executed.price
+                filled_size = abs(order.executed.size) or self.p.stake
+                is_tp = (self._tp_order is not None and order.ref == self._tp_order.ref)
+                is_sl = (self._sl_order is not None and order.ref == self._sl_order.ref)
+                exit_type = "TP" if is_tp else "SL" if is_sl else "EXIT"
                 logger.info(
-                    "EXIT  filled @ %.5f  size=%d  comm=%.4f",
-                    fill_price, order.executed.size, order.executed.comm,
+                    "EXIT [%s] filled @ %.5f  size=%.6f  comm=%.4f",
+                    exit_type, fill_price, filled_size, order.executed.comm,
                 )
-                self._exit_order = None
+                # Cancel the sibling order
+                if is_tp and self._sl_order is not None:
+                    self.cancel(self._sl_order)
+                    self._sl_order = None
+                elif is_sl and self._tp_order is not None:
+                    self.cancel(self._tp_order)
+                    self._tp_order = None
+                self._tp_order = None
+                self._sl_order = None
 
         elif order.status in (bt.Order.Cancelled, bt.Order.Expired, bt.Order.Rejected):
-            logger.warning(
-                "Order %s — status: %s", order.ref, order.getstatusname()
-            )
+            # Log only unexpected cancellations (not our own cancel() calls)
             if order.ref in self._entry_refs:
+                logger.warning("Entry order %s cancelled/rejected", order.ref)
                 self._entry_refs.discard(order.ref)
                 self._entry_order = None
 
