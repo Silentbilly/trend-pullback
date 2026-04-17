@@ -1,0 +1,71 @@
+# ============================================================
+# Trend Pullback Pro — Docker Compose
+#
+# One service per trading pair.
+# All secrets come from the .env file — never hardcode them here.
+#
+# Usage:
+#   cp .env.example .env        # fill in your keys
+#   docker compose up -d        # start all bots
+#   docker compose logs -f      # stream all logs
+#   docker compose logs -f bot-ethusdt   # single bot logs
+#   docker compose down         # stop all
+#   docker compose restart bot-ethusdt   # restart one
+# ============================================================
+
+x-bot-base: &bot-base
+  build:
+    context: .
+    dockerfile: Dockerfile
+  restart: unless-stopped
+  env_file: .env
+  volumes:
+    # State survives container restarts
+    - ./state:/app/state
+    # Logs on the host for easy access
+    - ./logs:/app/logs
+    # Configs — edit on host, picked up on next restart
+    - ./configs:/app/configs:ro
+
+services:
+
+  # ----------------------------------------------------------
+  # ETH/USDT — 15m
+  # ----------------------------------------------------------
+  bot-ethusdt:
+    <<: *bot-base
+    container_name: tp-ethusdt
+    command: >
+      python scripts/run_live.py
+      --config configs/live_testnet.yaml
+      --log-level INFO
+    environment:
+      # Override symbol-specific vars if needed
+      # (otherwise all bots share the same BYBIT keys from .env)
+      BOT_SYMBOL: ETHUSDT
+
+  # ----------------------------------------------------------
+  # BTC/USDT — 1h (uncomment when ready)
+  # ----------------------------------------------------------
+  # bot-btcusdt:
+  #   <<: *bot-base
+  #   container_name: tp-btcusdt
+  #   command: >
+  #     python scripts/run_live.py
+  #     --config configs/live_btcusdt.yaml
+  #     --log-level INFO
+  #   environment:
+  #     BOT_SYMBOL: BTCUSDT
+
+  # ----------------------------------------------------------
+  # SOL/USDT — 15m (uncomment when ready)
+  # ----------------------------------------------------------
+  # bot-solusdt:
+  #   <<: *bot-base
+  #   container_name: tp-solusdt
+  #   command: >
+  #     python scripts/run_live.py
+  #     --config configs/live_solusdt.yaml
+  #     --log-level INFO
+  #   environment:
+  #     BOT_SYMBOL: SOLUSDT

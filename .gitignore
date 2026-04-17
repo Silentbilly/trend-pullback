@@ -42,9 +42,10 @@ data/processed/*.csv
 output/
 !output/.gitkeep
 
-# Secrets / env
+# Secrets / env — NEVER commit these
 .env
 *.env
+!.env.example
 
 # Live state files (contain open position data — do not commit)
 state/
