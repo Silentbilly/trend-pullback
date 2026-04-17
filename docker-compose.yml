@@ -32,9 +32,9 @@ services:
   # ----------------------------------------------------------
   # ETH/USDT Perpetual — 15m  [TESTNET]
   # ----------------------------------------------------------
-  tp-eth-perp-15m:
+  tp-eth-15m:
     <<: *bot-base
-    container_name: tp-eth-perp-15m
+    container_name: tp-eth-15m
     command: >
       python scripts/run_live.py
       --config configs/live_testnet.yaml
@@ -45,9 +45,9 @@ services:
   # ----------------------------------------------------------
   # BTC/USDT Perpetual — 1h (uncomment when ready)
   # ----------------------------------------------------------
-  # tp-btc-perp-1h:
+  # tp-btc-1h:
   #   <<: *bot-base
-  #   container_name: tp-btc-perp-1h
+  #   container_name: tp-btc-1h
   #   command: >
   #     python scripts/run_live.py
   #     --config configs/live_btcusdt_1h.yaml
@@ -58,9 +58,9 @@ services:
   # ----------------------------------------------------------
   # SOL/USDT Perpetual — 15m (uncomment when ready)
   # ----------------------------------------------------------
-  # tp-sol-perp-15m:
+  # tp-sol-15m:
   #   <<: *bot-base
-  #   container_name: tp-sol-perp-15m
+  #   container_name: tp-sol-15m
   #   command: >
   #     python scripts/run_live.py
   #     --config configs/live_solusdt_15m.yaml
