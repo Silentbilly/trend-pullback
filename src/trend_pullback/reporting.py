@@ -93,13 +93,20 @@ def compute_summary(
 
     max_dd = _compute_max_drawdown(equity_df["equity"]) if not equity_df.empty else 0.0
 
+    gross_profit = trades_df.loc[trades_df["pnl_net"] > 0, "pnl_net"].sum()
+    gross_loss   = trades_df.loc[trades_df["pnl_net"] < 0, "pnl_net"].sum()
+    profit_factor = round(gross_profit / abs(gross_loss), 2) if gross_loss != 0 else float("inf")
+
     return {
-        "total_trades":    total_trades,
-        "win_rate_pct":    round(win_rate, 2),
-        "net_profit":      round(net_profit, 4),
-        "net_profit_pct":  round(net_profit_pct, 2),
-        "avg_trade_net":   round(avg_trade, 4),
+        "total_trades":     total_trades,
+        "win_rate_pct":     round(win_rate, 2),
+        "net_profit":       round(net_profit, 4),
+        "net_profit_pct":   round(net_profit_pct, 2),
+        "avg_trade_net":    round(avg_trade, 4),
         "max_drawdown_pct": round(max_dd, 2),
+        "profit_factor":    profit_factor,
+        "gross_profit":     round(gross_profit, 4),
+        "gross_loss":       round(gross_loss, 4),
     }
 
 
@@ -159,9 +166,14 @@ def print_summary(summary: dict) -> None:
     print("\n" + "=" * 48)
     print("  Trend Pullback Pro — Backtest Results")
     print("=" * 48)
+    pf = summary['profit_factor']
+    pf_str = f"{pf:.2f}" if pf != float('inf') else "∞"
     print(f"  Total Trades    : {summary['total_trades']}")
     print(f"  Win Rate        : {summary['win_rate_pct']:.1f}%")
     print(f"  Net Profit      : {summary['net_profit']:.2f}  ({summary['net_profit_pct']:.1f}%)")
+    print(f"  Gross Profit    : {summary['gross_profit']:.2f}")
+    print(f"  Gross Loss      : {summary['gross_loss']:.2f}")
+    print(f"  Profit Factor   : {pf_str}")
     print(f"  Avg Trade (net) : {summary['avg_trade_net']:.4f}")
     print(f"  Max Drawdown    : {summary['max_drawdown_pct']:.2f}%")
     print("=" * 48 + "\n")
