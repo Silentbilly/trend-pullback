@@ -30,42 +30,40 @@ x-bot-base: &bot-base
 services:
 
   # ----------------------------------------------------------
-  # ETH/USDT — 15m
+  # ETH/USDT Perpetual — 15m  [TESTNET]
   # ----------------------------------------------------------
-  bot-ethusdt:
+  tp-eth-perp-15m:
     <<: *bot-base
-    container_name: tp-ethusdt
+    container_name: tp-eth-perp-15m
     command: >
       python scripts/run_live.py
       --config configs/live_testnet.yaml
       --log-level INFO
     environment:
-      # Override symbol-specific vars if needed
-      # (otherwise all bots share the same BYBIT keys from .env)
       BOT_SYMBOL: ETHUSDT
 
   # ----------------------------------------------------------
-  # BTC/USDT — 1h (uncomment when ready)
+  # BTC/USDT Perpetual — 1h (uncomment when ready)
   # ----------------------------------------------------------
-  # bot-btcusdt:
+  # tp-btc-perp-1h:
   #   <<: *bot-base
-  #   container_name: tp-btcusdt
+  #   container_name: tp-btc-perp-1h
   #   command: >
   #     python scripts/run_live.py
-  #     --config configs/live_btcusdt.yaml
+  #     --config configs/live_btcusdt_1h.yaml
   #     --log-level INFO
   #   environment:
   #     BOT_SYMBOL: BTCUSDT
 
   # ----------------------------------------------------------
-  # SOL/USDT — 15m (uncomment when ready)
+  # SOL/USDT Perpetual — 15m (uncomment when ready)
   # ----------------------------------------------------------
-  # bot-solusdt:
+  # tp-sol-perp-15m:
   #   <<: *bot-base
-  #   container_name: tp-solusdt
+  #   container_name: tp-sol-perp-15m
   #   command: >
   #     python scripts/run_live.py
-  #     --config configs/live_solusdt.yaml
+  #     --config configs/live_solusdt_15m.yaml
   #     --log-level INFO
   #   environment:
   #     BOT_SYMBOL: SOLUSDT
