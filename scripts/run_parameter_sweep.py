@@ -81,6 +81,7 @@ def run_single(cfg: AppConfig, df: pd.DataFrame) -> dict:
         TrendPullbackStrategy,
         strategy_params=sp,
         signals_df=signals_df,
+        stake=bp.stake,
     )
     cerebro.addanalyzer(TradeListAnalyzer,   _name="trade_list")
     cerebro.addanalyzer(EquityCurveAnalyzer, _name="equity_curve")

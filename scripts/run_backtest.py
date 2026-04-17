@@ -94,6 +94,7 @@ def run(config_path: str, output_dir: str) -> dict:
         TrendPullbackStrategy,
         strategy_params=sp,
         signals_df=signals_df,
+        stake=bp.stake,
     )
 
     cerebro.addanalyzer(TradeListAnalyzer, _name="trade_list")

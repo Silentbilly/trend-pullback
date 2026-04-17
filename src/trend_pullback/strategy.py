@@ -46,6 +46,7 @@ class TrendPullbackStrategy(bt.Strategy):
     params = (
         ("strategy_params", None),
         ("signals_df", None),
+        ("stake", 1),
     )
 
     # ------------------------------------------------------------------
@@ -139,7 +140,7 @@ class TrendPullbackStrategy(bt.Strategy):
         # the NEXT bar's open.  This differs from Pine Script
         # (process_orders_on_close=true → fills at signal bar close).
         # See README: "Execution model divergence".
-        self._entry_order = self.buy(size=self.p.strategy_params.stake)
+        self._entry_order = self.buy(size=self.p.stake)
         # Exit order is placed in notify_order() after entry confirms
         self._pending_levels = levels
 
@@ -168,7 +169,7 @@ class TrendPullbackStrategy(bt.Strategy):
             bar_dt, close, levels.stop, levels.take, levels.risk,
         )
 
-        self._entry_order = self.sell(size=self.p.strategy_params.stake)
+        self._entry_order = self.sell(size=self.p.stake)
         self._pending_levels = levels
 
     # ------------------------------------------------------------------
