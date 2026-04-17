@@ -67,8 +67,11 @@ class TrendPullbackStrategy(bt.Strategy):
         self._exit_order: bt.Order | None = None
         self._entry_order: bt.Order | None = None
 
-        # State tracking
-        self._entry_bar: int | None = None
+        # Pending levels stored until entry fills
+        self._pending_levels = None
+
+        # Set of entry order refs — used in notify_order to identify entry vs exit
+        self._entry_refs: set[int] = set()
 
     def start(self) -> None:
         logger.info("Backtest started — %d bars", len(self.data))
@@ -84,20 +87,27 @@ class TrendPullbackStrategy(bt.Strategy):
         """Called once per completed bar."""
         bar_dt = self.data.datetime.datetime(0)
 
-        # Look up precomputed signals for this bar
-        try:
-            row = self._signals.loc[bar_dt]
-        except KeyError:
-            # Bar not in signals DataFrame (e.g. during warmup)
+        # Look up precomputed signals for this bar.
+        # Use nearest-match to avoid microsecond/tz mismatch between
+        # Backtrader datetime and pandas DatetimeIndex.
+        idx = self._signals.index
+        pos = idx.searchsorted(bar_dt, side="left")
+        if pos >= len(idx):
             return
+        # Allow up to 1-second tolerance for datetime matching
+        # (guards against microsecond/tz drift between BT and pandas)
+        matched_dt = idx[pos]
+        bar_dt_pd = pd.Timestamp(bar_dt)
+        delta = abs((matched_dt - bar_dt_pd).total_seconds())
+        if delta > 1.0:
+            return
+        row = self._signals.iloc[pos]
 
         long_sig  = bool(row["long_signal"])
         short_sig = bool(row["short_signal"])
 
         in_market = self.position.size != 0
-        pending_entry = self._entry_order is not None and not self._entry_order.status in (
-            bt.Order.Completed, bt.Order.Cancelled, bt.Order.Expired, bt.Order.Rejected
-        )
+        pending_entry = self._entry_order is not None
 
         if in_market or pending_entry:
             return
@@ -141,6 +151,7 @@ class TrendPullbackStrategy(bt.Strategy):
         # (process_orders_on_close=true → fills at signal bar close).
         # See README: "Execution model divergence".
         self._entry_order = self.buy(size=self.p.stake)
+        self._entry_refs.add(self._entry_order.ref)
         # Exit order is placed in notify_order() after entry confirms
         self._pending_levels = levels
 
@@ -170,6 +181,7 @@ class TrendPullbackStrategy(bt.Strategy):
         )
 
         self._entry_order = self.sell(size=self.p.stake)
+        self._entry_refs.add(self._entry_order.ref)
         self._pending_levels = levels
 
     # ------------------------------------------------------------------
@@ -182,9 +194,10 @@ class TrendPullbackStrategy(bt.Strategy):
             return
 
         if order.status == bt.Order.Completed:
-            is_entry = (order is self._entry_order)
+            is_entry = order.ref in self._entry_refs
 
             if is_entry:
+                self._entry_refs.discard(order.ref)
                 direction = "Long" if order.isbuy() else "Short"
                 fill_price = order.executed.price
                 logger.info(
@@ -225,9 +238,10 @@ class TrendPullbackStrategy(bt.Strategy):
                             valid=None,
                         )
                 self._entry_order = None
+                self._pending_levels = None
 
             else:
-                # Exit order completed
+                # Exit order completed — cancel the sibling order if still open
                 fill_price = order.executed.price
                 logger.info(
                     "EXIT  filled @ %.5f  size=%d  comm=%.4f",
@@ -239,7 +253,8 @@ class TrendPullbackStrategy(bt.Strategy):
             logger.warning(
                 "Order %s — status: %s", order.ref, order.getstatusname()
             )
-            if order is self._entry_order:
+            if order.ref in self._entry_refs:
+                self._entry_refs.discard(order.ref)
                 self._entry_order = None
 
     def notify_trade(self, trade: bt.Trade) -> None:

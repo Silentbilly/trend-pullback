@@ -27,4 +27,4 @@ backtest:
   data_path: "data/raw/BTCUSDT_1h.csv"
   initial_capital: 10000.0
   commission_pct: 0.06
-  stake: 1
+  stake: 0.01                # 0.01 BTC per trade

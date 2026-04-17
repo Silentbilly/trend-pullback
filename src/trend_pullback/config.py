@@ -73,7 +73,7 @@ class BacktestParams(BaseModel):
     data_path: str = "data/raw/BTCUSDT_1h.csv"
     initial_capital: Annotated[float, Field(gt=0.0)] = 10_000.0
     commission_pct: Annotated[float, Field(ge=0.0, description="Commission percent per trade")] = 0.06
-    stake: Annotated[int, Field(ge=1, description="Fixed position size (units)")] = 1
+    stake: Annotated[float, Field(gt=0.0, description="Fixed position size (units or contracts). Use decimals for crypto (e.g. 0.01 BTC)")] = 0.01
 
 
 # ---------------------------------------------------------------------------

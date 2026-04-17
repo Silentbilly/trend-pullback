@@ -38,4 +38,4 @@ backtest:
   data_path: "data/raw/BTCUSDT_1h.csv"
   initial_capital: 10000.0
   commission_pct: 0.06       # Percent per trade (matches Pine default)
-  stake: 1                   # Fixed position size (contracts/units)
+  stake: 0.01                # Fixed position size — use decimals for crypto (0.01 = 0.01 BTC)
