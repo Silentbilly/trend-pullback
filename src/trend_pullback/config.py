@@ -77,6 +77,15 @@ class BacktestParams(BaseModel):
     leverage: int = 1
 
 # ---------------------------------------------------------------------------
+# Live trading parameters
+# ---------------------------------------------------------------------------
+
+class LiveParams(BaseModel):
+    """Parameters specific to live/paper trading."""
+    testnet: bool = True   # default ALWAYS testnet — must explicitly set false for mainnet
+
+
+# ---------------------------------------------------------------------------
 # Root config
 # ---------------------------------------------------------------------------
 
@@ -85,6 +94,7 @@ class AppConfig(BaseModel):
 
     strategy: StrategyParams = StrategyParams()
     backtest: BacktestParams = BacktestParams()
+    live: LiveParams = LiveParams()
 
 
 # ---------------------------------------------------------------------------
