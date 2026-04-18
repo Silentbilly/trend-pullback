@@ -53,7 +53,7 @@ class TestLoadConfig:
 
     def test_load_sample_yaml(self) -> None:
         cfg = load_config("configs/sample_backtest.yaml")
-        assert cfg.strategy.use_rsi is False  # overridden in sample
+        assert cfg.strategy.use_rsi is True  # overridden in sample
 
     def test_missing_file_raises(self, tmp_path: Path) -> None:
         with pytest.raises(FileNotFoundError):

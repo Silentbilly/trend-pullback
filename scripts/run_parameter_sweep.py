@@ -49,10 +49,20 @@ logger = logging.getLogger(__name__)
 # Edit these lists to adjust the sweep scope.
 # ---------------------------------------------------------------------------
 
-FAST_LEN_VALUES = [21, 50, 89]
-PULL_LEN_VALUES = [9, 21, 34]
-ATR_MUL_VALUES  = [1.0, 1.5, 2.0]
-RR_VALUES       = [1.5, 2.0, 2.5]
+# FAST_LEN_VALUES = [21, 50, 89]
+# PULL_LEN_VALUES = [9, 21, 34]
+# ATR_MUL_VALUES  = [1.0, 1.5, 2.0]
+# RR_VALUES       = [1.5, 2.0, 2.5]
+
+FAST_LEN_VALUES = [34]
+PULL_LEN_VALUES = [13]
+ATR_MUL_VALUES  = [2.4]
+RR_VALUES       = [2.1, 2.25, 2.3, 2.4, 2.5, 2.6]
+
+# FAST_LEN_VALUES = [30, 34, 40, 45, 50, 55, 60]
+# PULL_LEN_VALUES = [18, 21, 24, 26]
+# ATR_MUL_VALUES  = [1.0, 1.25, 1.5, 1.75, 2.0]
+# RR_VALUES       = [2.0, 2.25, 2.5, 2.75, 3.0, 3.25]
 
 
 def parse_args() -> argparse.Namespace:
@@ -168,7 +178,7 @@ def main() -> None:
     results_df.to_csv(out_path, index=False)
     print(f"\nSweep complete — {len(results_df)} results saved to {out_path}")
     print("\nTop 5 by net profit %:")
-    print(results_df.head(5).to_string(index=False))
+    print(results_df.head(10).to_string(index=False))
 
 
 if __name__ == "__main__":
