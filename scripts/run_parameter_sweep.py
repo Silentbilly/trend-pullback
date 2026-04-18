@@ -11,8 +11,8 @@ Swept parameters:
   - rr
 
 Usage:
-    python scripts/run_parameter_sweep.py --config configs/base.yaml
-    python scripts/run_parameter_sweep.py --config configs/base.yaml --output output/sweep
+    python scripts/run_parameter_sweep.py --config configs/live_mainnet.yaml
+    python scripts/run_parameter_sweep.py --config configs/live_mainnet.yaml --output output/sweep
 """
 
 from __future__ import annotations

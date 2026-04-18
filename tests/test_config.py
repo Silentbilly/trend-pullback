@@ -46,7 +46,7 @@ class TestStrategyParams:
 
 class TestLoadConfig:
     def test_load_base_yaml(self) -> None:
-        cfg = load_config("configs/base.yaml")
+        cfg = load_config("configs/live_mainnet.yaml")
         assert isinstance(cfg, AppConfig)
         assert cfg.strategy.fast_len == 50
         assert cfg.backtest.initial_capital == 10_000.0

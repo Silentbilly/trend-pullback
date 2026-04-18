@@ -32,10 +32,15 @@ strategy:
   atr_mul: 1.5          # Stop distance = ATR * atr_mul
   rr: 2.0               # Risk-reward ratio for take-profit
 
+live:
+  testnet: true
+
 backtest:
-  symbol: "BTCUSDT"
-  timeframe: "1h"
-  data_path: "data/raw/BTCUSDT_1h.csv"
-  initial_capital: 10000.0
-  commission_pct: 0.06       # Percent per trade (matches Pine default)
-  stake: 0.01                # Fixed position size — use decimals for crypto (0.01 = 0.01 BTC)
+  symbol: "ETHUSDT"
+  timeframe: "15m"
+  data_path: "data/raw/ETHUSDT_15m.csv"   # not used in live mode
+  initial_capital: 100.0
+  commission_pct: 0.06
+  stake: 0.01
+  leverage: 10
+

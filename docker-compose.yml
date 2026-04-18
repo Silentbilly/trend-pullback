@@ -37,7 +37,7 @@ services:
     container_name: tp-eth-15m
     command: >
       python scripts/run_live.py
-      --config configs/live_testnet.yaml
+      --config configs/live_mainnet.yaml
       --log-level INFO
     environment:
       BOT_SYMBOL: ETHUSDT

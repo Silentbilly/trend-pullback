@@ -3,7 +3,7 @@ Run a single Trend Pullback Pro backtest.
 
 Usage:
 python scripts/run_backtest.py --config configs/sample_backtest.yaml
-python scripts/run_backtest.py --config configs/base.yaml --log-level DEBUG
+python scripts/run_backtest.py --config configs/live_mainnet.yaml --log-level DEBUG
 """
 
 from __future__ import annotations

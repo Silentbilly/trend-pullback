@@ -151,7 +151,7 @@ python scripts/run_backtest.py --config configs/my_config.yaml
 ## Parameter Sweep
 
 ```bash
-python scripts/run_parameter_sweep.py --config configs/base.yaml
+python scripts/run_parameter_sweep.py --config configs/live_mainnet.yaml
 ```
 
 Edit the grid at the top of `scripts/run_parameter_sweep.py`:

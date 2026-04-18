@@ -26,6 +26,9 @@ strategy:
   atr_mul: 1.5
   rr: 2.0
 
+live:
+  testnet: true
+
 backtest:
   symbol: "ETHUSDT"
   timeframe: "15m"
