@@ -75,7 +75,7 @@ class BybitBroker:
         api_key: str,
         api_secret: str,
         symbol: str,
-        testnet: bool = False,
+        testnet: bool = True,   # default: testnet — must be explicit False for mainnet
         leverage: int = 1,
     ) -> None:
         self.symbol = symbol

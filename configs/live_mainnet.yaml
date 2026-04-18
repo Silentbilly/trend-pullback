@@ -1,7 +1,7 @@
 # ============================================================
-# Trend Pullback Pro — Base Configuration
-# All parameters mirror the Pine Script inputs exactly.
-# Override any value in a derived config (e.g. sample_backtest.yaml).
+# Trend Pullback Pro — MAINNET config
+# WARNING: this config uses REAL money.
+# Make sure BYBIT_API_KEY/SECRET are mainnet credentials.
 # ============================================================
 
 strategy:
@@ -33,7 +33,7 @@ strategy:
   rr: 2.0               # Risk-reward ratio for take-profit
 
 live:
-  testnet: true
+  testnet: false   # MAINNET — real money
 
 backtest:
   symbol: "ETHUSDT"

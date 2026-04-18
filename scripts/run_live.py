@@ -269,15 +269,21 @@ def run_loop(config_path: str) -> None:
     # Credentials from environment
     api_key    = os.environ.get("BYBIT_API_KEY", "")
     api_secret = os.environ.get("BYBIT_API_SECRET", "")
-    testnet    = cfg.live.testnet if hasattr(cfg, "live") else True
+    testnet    = cfg.live.testnet
 
     if not api_key or not api_secret:
         logger.error("BYBIT_API_KEY and BYBIT_API_SECRET must be set in environment")
         sys.exit(1)
 
     # Initialise components
-    broker   = BybitBroker(api_key, api_secret, symbol, testnet=testnet, leverage=bp.leverage)
-    notifier = Notifier()
+    if not testnet:
+        logger.warning("!" * 60)
+        logger.warning("  MAINNET MODE — TRADING WITH REAL MONEY")
+        logger.warning("  symbol=%s  stake=%s  leverage=%s", symbol, stake, bp.leverage)
+        logger.warning("!" * 60)
+
+    broker    = BybitBroker(api_key, api_secret, symbol, testnet=testnet, leverage=bp.leverage)
+    notifier  = Notifier()
     state_mgr = StateManager(f"state/{bp.symbol.lower()}_state.json")
 
     notifier.on_start(symbol, timeframe, testnet)
