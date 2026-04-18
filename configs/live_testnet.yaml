@@ -30,6 +30,8 @@ backtest:
   symbol: "ETHUSDT"
   timeframe: "15m"
   data_path: "data/raw/ETHUSDT_15m.csv"   # not used in live mode
-  initial_capital: 10000.0
+  initial_capital: 100.0
   commission_pct: 0.06
-  stake: 0.01                              # 0.01 ETH per trade
+  stake: 0.01
+  leverage: 10
+

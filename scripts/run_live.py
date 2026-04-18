@@ -276,7 +276,7 @@ def run_loop(config_path: str) -> None:
         sys.exit(1)
 
     # Initialise components
-    broker   = BybitBroker(api_key, api_secret, symbol, testnet=testnet)
+    broker   = BybitBroker(api_key, api_secret, symbol, testnet=testnet, leverage=bp.leverage)
     notifier = Notifier()
     state_mgr = StateManager(f"state/{bp.symbol.lower()}_state.json")
 

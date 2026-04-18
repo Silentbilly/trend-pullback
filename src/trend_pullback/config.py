@@ -74,7 +74,7 @@ class BacktestParams(BaseModel):
     initial_capital: Annotated[float, Field(gt=0.0)] = 10_000.0
     commission_pct: Annotated[float, Field(ge=0.0, description="Commission percent per trade")] = 0.06
     stake: Annotated[float, Field(gt=0.0, description="Fixed position size (units or contracts). Use decimals for crypto (e.g. 0.01 BTC)")] = 0.01
-
+    leverage: int = 1
 
 # ---------------------------------------------------------------------------
 # Root config
