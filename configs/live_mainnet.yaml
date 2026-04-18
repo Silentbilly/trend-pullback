@@ -6,9 +6,9 @@
 
 strategy:
   # --- Trend EMAs ---
-  fast_len: 50          # Fast EMA period
+  fast_len: 34          # Fast EMA period
   slow_len: 200         # Slow EMA period
-  pull_len: 21          # Pullback EMA period
+  pull_len: 13          # Pullback EMA period
 
   # --- Slope filter ---
   use_slope: true       # Require both EMAs to slope in trend direction
@@ -16,7 +16,7 @@ strategy:
 
   # --- Pullback window ---
   min_pb: 1             # Minimum consecutive pullback bars required
-  max_pb: 8             # Maximum consecutive pullback bars allowed
+  max_pb: 2             # Maximum consecutive pullback bars allowed
 
   # --- RSI filter ---
   use_rsi: true         # Enable RSI filter
@@ -29,8 +29,8 @@ strategy:
 
   # --- Risk ---
   atr_len: 14           # ATR period
-  atr_mul: 1.5          # Stop distance = ATR * atr_mul
-  rr: 2.0               # Risk-reward ratio for take-profit
+  atr_mul: 2.4          # Stop distance = ATR * atr_mul
+  rr: 2.3               # Risk-reward ratio for take-profit
 
 live:
   testnet: true
