@@ -5,26 +5,26 @@
 # ============================================================
 
 strategy:
-  fast_len: 50
+  fast_len: 34
   slow_len: 200
-  pull_len: 21
+  pull_len: 13
   use_slope: true
   slope_lb: 5
   min_pb: 1
-  max_pb: 8
-  use_rsi: false        # RSI filter disabled — useful for initial exploration
+  max_pb: 2
+  use_rsi: true        # RSI filter disabled — useful for initial exploration
   rsi_len: 14
   rsi_long_min: 45
   rsi_short_max: 55
   block_repeats: true
   atr_len: 14
-  atr_mul: 1.5
-  rr: 2.0
+  atr_mul: 2.4
+  rr: 2.3
 
 backtest:
-  symbol: "BTCUSDT"
-  timeframe: "1h"
-  data_path: "data/raw/BTCUSDT_1h.csv"
-  initial_capital: 10000.0
+  symbol: "ETHUSDT"
+  timeframe: "15m"
+  data_path: "data/raw/bybit_spot_ETHUSDT_15m_40000.csv"
+  initial_capital: 50.0
   commission_pct: 0.06
-  stake: 0.01                # 0.01 BTC per trade
+  stake: 0.01
