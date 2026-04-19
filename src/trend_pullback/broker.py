@@ -231,17 +231,35 @@ class BybitBroker:
             "Placing STOP %s  size=%.6f  stop=%.5f  symbol=%s",
             side.upper(), size, stop_price, self.symbol,
         )
+
+        # Получаем текущую цену для определения направления триггера
+        ticker = self._retry(lambda: self._exchange.fetch_ticker(self.symbol))
+        last_price = float(ticker["last"])
+
+        # Определяем triggerDirection по логике Bybit:
+        # 1 = цена растёт до стопа, 2 = цена падает до стопа
+        side_lower = side.lower()
+        if side_lower == "buy":
+            # Стоп для шорта: обычно stop_price > last_price → срабатывание на рост
+            trigger_direction = 1 if stop_price >= last_price else 2
+        else:  # "sell"
+            # Стоп для лонга: обычно stop_price < last_price → срабатывание на падение
+            trigger_direction = 2 if stop_price <= last_price else 1
+
+        params = {
+            "category": "linear",
+            "stopPrice": stop_price,
+            "triggerDirection": trigger_direction,
+            "reduceOnly": True,
+        }
+
         order = self._retry(
             lambda: self._exchange.create_order(
                 symbol=self.symbol,
                 type="stop_market",
                 side=side,
                 amount=size,
-                params={
-                    "category": "linear",
-                    "stopPrice": stop_price,
-                    "reduceOnly": True,
-                },
+                params=params,
             )
         )
         return self._to_order_result(order)
