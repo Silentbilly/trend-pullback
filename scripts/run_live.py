@@ -343,9 +343,20 @@ def run_loop(config_path: str) -> None:
                 latest.name, long_sig, short_sig, state_mgr.state.in_position,
             )
 
-            # 4. Skip if already in a position
+            # 4. Skip if already in a position (state check)
             if state_mgr.state.in_position:
-                logger.debug("In position — skipping entry check")
+                logger.debug("In position (state) — skipping entry check")
+                continue
+
+            # 4b. Double-check real position on exchange to prevent stacking
+            # Protects against state.json being out of sync (e.g. after restart)
+            real_pos = broker.get_position()
+            if real_pos.side != "none":
+                logger.warning(
+                    "Real position detected on exchange (%s size=%.6f) "
+                    "but state says flat — skipping entry to prevent stacking",
+                    real_pos.side, real_pos.size,
+                )
                 continue
 
             # 5. Act on signals
