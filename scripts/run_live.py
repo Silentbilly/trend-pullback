@@ -262,7 +262,12 @@ def run_loop(config_path: str) -> None:
     sp  = cfg.strategy
     bp  = cfg.backtest
 
-    symbol    = bp.symbol.replace("USDT", "/USDT")  # "ETHUSDT" → "ETH/USDT"
+    if bp.symbol.endswith("USDT"):
+        base = bp.symbol[:-4]
+        symbol = f"{base}/USDT:USDT"  # "ETHUSDT" -> "ETH/USDT:USDT"
+    else:
+        raise ValueError(f"Unsupported symbol format for Bybit linear: {bp.symbol}")
+
     timeframe = bp.timeframe
     stake     = bp.stake
 
