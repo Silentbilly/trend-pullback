@@ -141,10 +141,8 @@ def check_exit_fills(
 
     if tp_status == "closed":
         logger.info("TP filled — closing position state")
-        # Cancel the SL order
         if st.sl_order_id:
             broker.cancel_order(st.sl_order_id)
-        # Estimate exit price from position entry + levels (best effort)
         notifier.on_tp_hit(symbol, st.entry_price, st.entry_price, pnl_pct=0)
         state_mgr.on_exit("TP")
         return True
@@ -220,6 +218,10 @@ def handle_signal(
         entry_result = broker.place_market_order(entry_side, stake)
         logger.info("Entry order placed: %s", entry_result.order_id)
 
+        # Real fill price: use exchange-reported price if available, else fall back to close
+        fill_price = entry_result.price if entry_result.price > 0 else close
+        fill_size  = entry_result.size  if entry_result.size  > 0 else stake
+
         # Small wait for the entry to fill on the exchange
         time.sleep(1.0)
 
@@ -235,17 +237,23 @@ def handle_signal(
         state_mgr.on_entry(
             side=direction,
             size=stake,
-            entry_price=close,
+            entry_price=fill_price,
             tp_order_id=tp_result.order_id,
             sl_order_id=sl_result.order_id,
             signal_bar=bar_dt,
         )
 
-        # 5. Notify
-        if direction == "long":
-            notifier.on_long_entry(symbol, close, levels.stop, levels.take, stake, bar_dt)
-        else:
-            notifier.on_short_entry(symbol, close, levels.stop, levels.take, stake, bar_dt)
+        # 5. Notify — use real fill price, real size and RR from params
+        notifier.on_entry_placed(
+            symbol=symbol,
+            direction=direction,
+            entry=fill_price,
+            stop=levels.stop,
+            take=levels.take,
+            size=fill_size,
+            rr=params.rr,
+            bar_dt=bar_dt,
+        )
 
     except BrokerError as exc:
         logger.error("Failed to place orders: %s", exc)
@@ -354,7 +362,6 @@ def run_loop(config_path: str) -> None:
                 continue
 
             # 4b. Double-check real position on exchange to prevent stacking
-            # Protects against state.json being out of sync (e.g. after restart)
             real_pos = broker.get_position()
             if real_pos.side != "none":
                 logger.warning(
@@ -377,7 +384,6 @@ def run_loop(config_path: str) -> None:
         except BrokerError as exc:
             logger.error("BrokerError: %s", exc)
             notifier.on_error(symbol, str(exc))
-            # Back off before retrying
             time.sleep(30)
 
         except Exception as exc:

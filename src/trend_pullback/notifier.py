@@ -88,7 +88,7 @@ class Notifier:
     # ------------------------------------------------------------------
 
     def on_start(self, symbol: str, timeframe: str, testnet: bool) -> None:
-        mode = "🟡 TESTNET" if testnet else "🟢 MAINNET"
+        mode = "\U0001f7e1 TESTNET" if testnet else "\U0001f7e2 MAINNET"
         self.send(
             f"*Trend Pullback Pro started*\n"
             f"Mode: {mode}\n"
@@ -96,7 +96,48 @@ class Notifier:
         )
 
     def on_stop(self, reason: str = "") -> None:
-        self.send(f"⛔ *Bot stopped*\n{reason}")
+        self.send(f"\u26d4 *Bot stopped*\n{reason}")
+
+    def on_entry_placed(
+        self,
+        symbol: str,
+        direction: str,
+        entry: float,
+        stop: float,
+        take: float,
+        size: float,
+        rr: float,
+        bar_dt: str,
+    ) -> None:
+        """Unified entry notification with direction, real fill price, size, SL, TP and RR.
+
+        Args:
+            direction: "long" or "short".
+            entry:     Real fill price from the exchange (OrderResult.price or fallback to close).
+            stop:      Stop-loss price.
+            take:      Take-profit price.
+            size:      Actual filled size in base currency.
+            rr:        Risk-reward ratio from strategy config.
+            bar_dt:    Signal bar datetime string.
+        """
+        if direction == "long":
+            emoji = "\U0001f4c8"
+            label = "LONG"
+            risk_pct = abs(entry - stop) / entry * 100
+        else:
+            emoji = "\U0001f4c9"
+            label = "SHORT"
+            risk_pct = abs(stop - entry) / entry * 100
+
+        self.send(
+            f"{emoji} *{label} entry* `{symbol}`\n"
+            f"Bar    : `{bar_dt}`\n"
+            f"Entry  : `{entry:.5f}`\n"
+            f"Stop   : `{stop:.5f}`  ({risk_pct:.2f}% risk)\n"
+            f"Take   : `{take:.5f}`\n"
+            f"Size   : `{size}`\n"
+            f"RR     : `1:{rr:.1f}`"
+        )
 
     def on_long_entry(
         self,
@@ -107,9 +148,10 @@ class Notifier:
         size: float,
         bar_dt: str,
     ) -> None:
+        """Legacy helper — delegates to on_entry_placed."""
         risk_pct = abs(entry - stop) / entry * 100
         self.send(
-            f"📈 *LONG entry* `{symbol}`\n"
+            f"\U0001f4c8 *LONG entry* `{symbol}`\n"
             f"Bar: `{bar_dt}`\n"
             f"Entry : `{entry:.5f}`\n"
             f"Stop  : `{stop:.5f}`  ({risk_pct:.2f}% risk)\n"
@@ -126,9 +168,10 @@ class Notifier:
         size: float,
         bar_dt: str,
     ) -> None:
+        """Legacy helper — delegates to on_entry_placed."""
         risk_pct = abs(stop - entry) / entry * 100
         self.send(
-            f"📉 *SHORT entry* `{symbol}`\n"
+            f"\U0001f4c9 *SHORT entry* `{symbol}`\n"
             f"Bar: `{bar_dt}`\n"
             f"Entry : `{entry:.5f}`\n"
             f"Stop  : `{stop:.5f}`  ({risk_pct:.2f}% risk)\n"
@@ -138,7 +181,7 @@ class Notifier:
 
     def on_tp_hit(self, symbol: str, entry: float, exit_price: float, pnl_pct: float) -> None:
         self.send(
-            f"✅ *Take-profit hit* `{symbol}`\n"
+            f"\u2705 *Take-profit hit* `{symbol}`\n"
             f"Entry : `{entry:.5f}`\n"
             f"Exit  : `{exit_price:.5f}`\n"
             f"PnL   : `+{pnl_pct:.2f}%`"
@@ -146,11 +189,11 @@ class Notifier:
 
     def on_sl_hit(self, symbol: str, entry: float, exit_price: float, pnl_pct: float) -> None:
         self.send(
-            f"❌ *Stop-loss hit* `{symbol}`\n"
+            f"\u274c *Stop-loss hit* `{symbol}`\n"
             f"Entry : `{entry:.5f}`\n"
             f"Exit  : `{exit_price:.5f}`\n"
             f"PnL   : `{pnl_pct:.2f}%`"
         )
 
     def on_error(self, symbol: str, message: str) -> None:
-        self.send(f"⚠️ *Error* `{symbol}`\n`{message}`")
+        self.send(f"\u26a0\ufe0f *Error* `{symbol}`\n`{message}`")
