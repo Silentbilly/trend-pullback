@@ -275,6 +275,7 @@ def run_loop(config_path: str) -> None:
     api_key    = os.environ.get("BYBIT_API_KEY", "")
     api_secret = os.environ.get("BYBIT_API_SECRET", "")
     testnet    = cfg.live.testnet
+    demo_trading = cfg.live.demo_trading
 
     if not api_key or not api_secret:
         logger.error("BYBIT_API_KEY and BYBIT_API_SECRET must be set in environment")
@@ -287,7 +288,14 @@ def run_loop(config_path: str) -> None:
         logger.warning("  symbol=%s  stake=%s  leverage=%s", symbol, stake, bp.leverage)
         logger.warning("!" * 60)
 
-    broker    = BybitBroker(api_key, api_secret, symbol, testnet=testnet, leverage=bp.leverage)
+    broker = BybitBroker(
+        api_key,
+        api_secret,
+        symbol,
+        testnet=testnet,
+        demo_trading=demo_trading,
+        leverage=bp.leverage,
+    )
     notifier  = Notifier()
     state_mgr = StateManager(f"state/{bp.symbol.lower()}_state.json")
 

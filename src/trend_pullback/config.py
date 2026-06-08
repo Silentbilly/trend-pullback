@@ -83,7 +83,7 @@ class BacktestParams(BaseModel):
 class LiveParams(BaseModel):
     """Parameters specific to live/paper trading."""
     testnet: bool = True   # default ALWAYS testnet — must explicitly set false for mainnet
-
+    demo_trading: bool = False
 
 # ---------------------------------------------------------------------------
 # Root config

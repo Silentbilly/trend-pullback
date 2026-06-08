@@ -35,9 +35,9 @@ def build_params(category: str | None = None) -> dict:
 
 
 def fetch_ohlcv_history(
-    symbol: str = "ETH/USDT",
+    symbol: str = "BNB/USDT",
     timeframe: str = "15m",
-    target: int = 40_000,
+    target: int = 20_000,
     limit: int = 1000,
     category: str | None = None,
 ) -> pd.DataFrame:
@@ -136,9 +136,9 @@ def save_dataframe(
 
 
 def main():
-    symbol = "ETH/USDT"
+    symbol = "BNB/USDT"
     timeframe = "15m"
-    target = 40_000
+    target = 20_000
     limit = 1000
 
     # Для spot оставь None

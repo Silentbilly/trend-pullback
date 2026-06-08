@@ -2,7 +2,7 @@
 Bybit broker adapter for Trend Pullback Pro live trading.
 
 Connects to Bybit via CCXT (unified API).
-Supports both testnet and mainnet — controlled by config.
+Supports mainnet, testnet, and Bybit demo trading — controlled by config.
 
 Responsibilities:
   - Fetch closed OHLCV bars
@@ -24,7 +24,6 @@ from __future__ import annotations
 import logging
 import time
 from dataclasses import dataclass
-from typing import Optional
 
 import ccxt
 
@@ -63,11 +62,16 @@ class BybitBroker:
     """Bybit broker adapter using CCXT.
 
     Args:
-        api_key:    Bybit API key.
-        api_secret: Bybit API secret.
-        testnet:    If True, connects to Bybit testnet. Default True.
-        symbol:     Trading symbol in CCXT format, e.g. "ETH/USDT".
-        leverage:   Leverage to set on init (default 1 = no leverage).
+        api_key:       Bybit API key.
+        api_secret:    Bybit API secret.
+        symbol:        Trading symbol in CCXT format, e.g. "ETH/USDT:USDT".
+        testnet:       If True, connects to Bybit testnet.
+        demo_trading:  If True, connects to Bybit Demo Trading.
+        leverage:      Leverage to set on init (default 1 = no leverage).
+
+    Notes:
+        - demo_trading and testnet are mutually exclusive.
+        - Priority: demo_trading > testnet > mainnet.
     """
 
     def __init__(
@@ -75,58 +79,66 @@ class BybitBroker:
         api_key: str,
         api_secret: str,
         symbol: str,
-        testnet: bool = True,   # default: testnet — must be explicit False for mainnet
+        testnet: bool = True,
+        demo_trading: bool = False,
         leverage: int = 1,
     ) -> None:
         self.symbol = symbol
         self.testnet = testnet
+        self.demo_trading = demo_trading
         self.leverage = leverage
+
+        if self.demo_trading and self.testnet:
+            raise BrokerError("Invalid config: demo_trading=true and testnet=true cannot be used together")
 
         self._exchange = ccxt.bybit(
             {
                 "apiKey": api_key,
                 "secret": api_secret,
+                "enableRateLimit": True,
                 "options": {
-                    # USDT-margined perpetual futures (Bybit linear category)
-                    # This affects ALL requests: OHLCV, orders, positions.
-                    # Change to "spot" for spot trading.
                     "defaultType": "linear",
                     "defaultSubType": "linear",
                 },
             }
         )
 
-        if testnet:
-            self._exchange.set_sandbox_mode(True)
-            logger.info("Broker: Bybit TESTNET  symbol=%s", symbol)
-        else:
-            logger.info("Broker: Bybit MAINNET  symbol=%s", symbol)
-
+        self._configure_environment()
         self._exchange.load_markets()
         self._set_leverage()
+
+    def _configure_environment(self) -> None:
+        """Configure Bybit environment: demo, testnet, or mainnet."""
+        if self.demo_trading:
+            if hasattr(self._exchange, "enable_demo_trading"):
+                self._exchange.enable_demo_trading(True)
+                logger.info("Broker: Bybit DEMO TRADING  symbol=%s", self.symbol)
+                return
+
+            self._exchange.urls["api"] = "https://api-demo.bybit.com"
+            logger.info("Broker: Bybit DEMO TRADING  symbol=%s", self.symbol)
+            return
+
+        if self.testnet:
+            self._exchange.set_sandbox_mode(True)
+            logger.info("Broker: Bybit TESTNET  symbol=%s", self.symbol)
+        else:
+            logger.info("Broker: Bybit MAINNET  symbol=%s", self.symbol)
 
     # ------------------------------------------------------------------
     # Market data
     # ------------------------------------------------------------------
 
     def fetch_ohlcv(self, timeframe: str, limit: int = 300) -> list[list]:
-        """Fetch the most recent closed OHLCV bars.
-
-        Args:
-            timeframe: CCXT timeframe string, e.g. "15m", "1h".
-            limit:     Number of bars to fetch (including the current open bar).
-
-        Returns:
-            List of [timestamp_ms, open, high, low, close, volume] rows.
-            The last bar (current open bar) is excluded — only closed bars.
-        """
+        """Fetch the most recent closed OHLCV bars."""
         raw = self._retry(
             lambda: self._exchange.fetch_ohlcv(
-                self.symbol, timeframe, limit=limit + 1,
+                self.symbol,
+                timeframe,
+                limit=limit + 1,
                 params={"category": "linear"},
             )
         )
-        # Drop the last bar — it's still open
         return raw[:-1]
 
     # ------------------------------------------------------------------
@@ -134,49 +146,56 @@ class BybitBroker:
     # ------------------------------------------------------------------
 
     def get_position(self) -> PositionInfo:
-        """Return the current open position for the symbol.
-
-        Returns:
-            PositionInfo with side="none" if no position is open.
-        """
+        """Return the current open position for the symbol."""
         positions = self._retry(
             lambda: self._exchange.fetch_positions([self.symbol])
         )
+        market = self._exchange.market(self.symbol)
+        market_id = market.get("id")
+        alt_symbols = {
+            self.symbol,
+            self.symbol.replace("/", ""),
+            self.symbol.replace("/", "").replace(":", ""),
+            market_id,
+        }
+
         for pos in positions:
-            if pos["symbol"] != self._exchange.market(self.symbol)["id"] and \
-               pos.get("info", {}).get("symbol") not in (self.symbol, self.symbol.replace("/", "")):
+            info_symbol = pos.get("info", {}).get("symbol")
+            pos_symbol = pos.get("symbol")
+            if pos_symbol not in alt_symbols and info_symbol not in alt_symbols:
                 continue
+
             size = float(pos.get("contracts", 0) or 0)
             if size > 0:
-                side = pos.get("side", "").lower()
+                side = (pos.get("side", "") or "").lower()
                 entry = float(pos.get("entryPrice", 0) or 0)
+                if side not in ("long", "short"):
+                    side = "long"
                 return PositionInfo(
                     symbol=self.symbol,
-                    side=side if side in ("long", "short") else "long",
+                    side=side,
                     size=size,
                     entry_price=entry,
                 )
-        return PositionInfo(symbol=self.symbol, side="none", size=0.0, entry_price=0.0)
+
+        return PositionInfo(
+            symbol=self.symbol,
+            side="none",
+            size=0.0,
+            entry_price=0.0,
+        )
 
     def get_balance_usdt(self) -> float:
         """Return available USDT balance."""
         balance = self._retry(lambda: self._exchange.fetch_balance())
-        return float(balance.get("USDT", {}).get("free", 0))
+        return float(balance.get("USDT", {}).get("free", 0) or 0)
 
     # ------------------------------------------------------------------
     # Order placement
     # ------------------------------------------------------------------
 
     def place_market_order(self, side: str, size: float) -> OrderResult:
-        """Place a market entry order.
-
-        Args:
-            side: "buy" for long, "sell" for short.
-            size: Position size in base currency (e.g. 0.01 ETH).
-
-        Returns:
-            OrderResult with the placed order details.
-        """
+        """Place a market entry order."""
         logger.info("Placing MARKET %s  size=%.6f  symbol=%s", side.upper(), size, self.symbol)
         order = self._retry(
             lambda: self._exchange.create_order(
@@ -190,16 +209,7 @@ class BybitBroker:
         return self._to_order_result(order)
 
     def place_limit_order(self, side: str, size: float, price: float) -> OrderResult:
-        """Place a limit take-profit order.
-
-        Args:
-            side:  "sell" for long TP, "buy" for short TP.
-            size:  Position size in base currency.
-            price: Limit price.
-
-        Returns:
-            OrderResult.
-        """
+        """Place a limit take-profit order."""
         logger.info(
             "Placing LIMIT %s  size=%.6f  price=%.5f  symbol=%s",
             side.upper(), size, price, self.symbol,
@@ -217,24 +227,12 @@ class BybitBroker:
         return self._to_order_result(order)
 
     def place_stop_order(self, side: str, size: float, stop_price: float) -> OrderResult:
-        """Place a stop-loss order.
-
-        Args:
-            side:        "sell" for long SL, "buy" for short SL.
-            size:        Position size in base currency.
-            stop_price:  Trigger price.
-
-        Returns:
-            OrderResult.
-        """
+        """Place a stop-loss order."""
         logger.info(
             "Placing STOP %s  size=%.6f  stop=%.5f  symbol=%s",
             side.upper(), size, stop_price, self.symbol,
         )
 
-        # Bybit V5 linear conditional market order.
-        # triggerDirection is NOT passed — Bybit infers it automatically
-        # from the order side and open position on linear (futures) market.
         params = {
             "category": "linear",
             "triggerPrice": stop_price,
@@ -254,14 +252,7 @@ class BybitBroker:
         return self._to_order_result(order)
 
     def cancel_order(self, order_id: str) -> bool:
-        """Cancel an open order by ID.
-
-        Args:
-            order_id: Exchange order ID.
-
-        Returns:
-            True if cancelled, False if already filled/cancelled.
-        """
+        """Cancel an open order by ID."""
         try:
             self._exchange.cancel_order(order_id, self.symbol)
             logger.info("Cancelled order %s", order_id)
@@ -274,14 +265,7 @@ class BybitBroker:
             return False
 
     def get_order_status(self, order_id: str) -> str:
-        """Return order status string: 'open', 'closed', 'canceled'.
-
-        Args:
-            order_id: Exchange order ID.
-
-        Returns:
-            Status string, or 'unknown' on failure.
-        """
+        """Return order status string: 'open', 'closed', 'canceled'."""
         try:
             order = self._retry(
                 lambda: self._exchange.fetch_order(order_id, self.symbol)

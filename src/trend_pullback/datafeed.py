@@ -50,7 +50,7 @@ def load_ohlcv(path: str | Path) -> pd.DataFrame:
 
     # Parse datetime — try column named 'datetime' or 'date' or 'timestamp'
     dt_col = _find_datetime_column(df)
-    df[dt_col] = pd.to_datetime(df[dt_col], utc=False)
+    df[dt_col] = pd.to_datetime(df[dt_col], utc=True).dt.tz_localize(None)
     df = df.rename(columns={dt_col: "datetime"})
     df = df.set_index("datetime")
     df = df.sort_index()

@@ -53,16 +53,18 @@ logger = logging.getLogger(__name__)
 # PULL_LEN_VALUES = [9, 21, 34]
 # ATR_MUL_VALUES  = [1.0, 1.5, 2.0]
 # RR_VALUES       = [1.5, 2.0, 2.5]
+#
+# FAST_LEN_VALUES = [34]
+# PULL_LEN_VALUES = [13]
+# ATR_MUL_VALUES  = [2.4]
+# RR_VALUES       = [2.1, 2.25, 2.3, 2.4, 2.5, 2.6]
 
-FAST_LEN_VALUES = [34]
-PULL_LEN_VALUES = [13]
-ATR_MUL_VALUES  = [2.4]
-RR_VALUES       = [2.1, 2.25, 2.3, 2.4, 2.5, 2.6]
-
-# FAST_LEN_VALUES = [30, 34, 40, 45, 50, 55, 60]
-# PULL_LEN_VALUES = [18, 21, 24, 26]
-# ATR_MUL_VALUES  = [1.0, 1.25, 1.5, 1.75, 2.0]
-# RR_VALUES       = [2.0, 2.25, 2.5, 2.75, 3.0, 3.25]
+FAST_LEN_VALUES = [30, 34, 40, 55, 89]
+PULL_LEN_VALUES = [13, 18, 21, 34, 26]
+ATR_MUL_VALUES  = [1.0, 1.5, 2.0]
+RR_VALUES       = [2.0, 2.5, 3.0]
+SLOPE_LB_VALUES = [5, 7]
+MAX_PB_VALUES   = [2, 3, 4]
 
 
 def parse_args() -> argparse.Namespace:
@@ -121,12 +123,14 @@ def main() -> None:
         PULL_LEN_VALUES,
         ATR_MUL_VALUES,
         RR_VALUES,
+        SLOPE_LB_VALUES,
+        MAX_PB_VALUES,
     ))
     logger.info("Total combinations: %d", len(grid))
 
     rows: list[dict] = []
 
-    for idx, (fast_len, pull_len, atr_mul, rr) in enumerate(grid, start=1):
+    for idx, (fast_len, pull_len, atr_mul, rr, slope_lb, max_pb) in enumerate(grid, start=1):
         # Skip invalid combos (fast EMA >= slow EMA)
         if fast_len >= base_cfg.strategy.slow_len:
             logger.debug("Skipping fast_len=%d >= slow_len=%d", fast_len, base_cfg.strategy.slow_len)
@@ -136,8 +140,10 @@ def main() -> None:
         cfg = deepcopy(base_cfg)
         cfg.strategy.fast_len = fast_len
         cfg.strategy.pull_len = pull_len
-        cfg.strategy.atr_mul  = atr_mul
-        cfg.strategy.rr       = rr
+        cfg.strategy.atr_mul = atr_mul
+        cfg.strategy.rr = rr
+        cfg.strategy.slope_lb = slope_lb
+        cfg.strategy.max_pb = max_pb
 
         print(
             f"[{idx}/{len(grid)}]  fast={fast_len}  pull={pull_len}"
@@ -149,16 +155,22 @@ def main() -> None:
         try:
             summary = run_single(cfg, df)
             row = {
-                "fast_len":        fast_len,
-                "pull_len":        pull_len,
-                "atr_mul":         atr_mul,
-                "rr":              rr,
+                "fast_len": fast_len,
+                "pull_len": pull_len,
+                "atr_mul": atr_mul,
+                "rr": rr,
+                "slope_lb": slope_lb,
+                "max_pb": max_pb,
                 **summary,
             }
             rows.append(row)
+            pf = summary.get("profit_factor")
+            pf_str = f"{pf:.2f}" if pf is not None else "n/a"
+
             print(
                 f"trades={summary['total_trades']}"
                 f"  wr={summary['win_rate_pct']:.0f}%"
+                f"  pf={pf_str}"
                 f"  net%={summary['net_profit_pct']:.1f}%"
             )
         except Exception as exc:  # noqa: BLE001
