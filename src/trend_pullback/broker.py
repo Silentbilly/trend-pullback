@@ -227,16 +227,39 @@ class BybitBroker:
         return self._to_order_result(order)
 
     def place_stop_order(self, side: str, size: float, stop_price: float) -> OrderResult:
+        """Place a stop-loss conditional market order on Bybit linear (futures).
+
+        Logic:
+          - Long SL: side="sell" → price falls to stop → triggerDirection="descending"
+          - Short SL: side="buy"  → price rises to stop → triggerDirection="ascending"
+
+        CCXT (bybit adapter) requires triggerDirection to pass its internal
+        validation before sending the request to the exchange. We compute it
+        deterministically from the order side so no current price fetch is needed.
+
+        Args:
+            side:        "sell" for long SL, "buy" for short SL.
+            size:        Position size in base currency.
+            stop_price:  Trigger price.
+
+        Returns:
+            OrderResult.
+        """
+        # "sell" SL closes a long → price must fall → descending
+        # "buy"  SL closes a short → price must rise → ascending
+        trigger_direction = "descending" if side == "sell" else "ascending"
+
         """Place a stop-loss order."""
         logger.info(
-            "Placing STOP %s  size=%.6f  stop=%.5f  symbol=%s",
-            side.upper(), size, stop_price, self.symbol,
+            "Placing STOP %s  size=%.6f  stop=%.5f  triggerDirection=%s  symbol=%s",
+            side.upper(), size, stop_price, trigger_direction, self.symbol,
         )
 
         params = {
             "category": "linear",
             "triggerPrice": stop_price,
             "triggerBy": "LastPrice",
+            "triggerDirection": trigger_direction,
             "reduceOnly": True,
         }
 
